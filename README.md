@@ -17,12 +17,12 @@ Based on [oil-oil/codex](https://github.com/oil-oil/codex).
 ### 2. [plan-review](./plan-review/)
 Reviews a technical plan via Codex and iteratively refines it. Uses adversarial review to improve plan quality before implementation.
 
-**Trigger:** `/plan-review {plan文件路径}`
+**Trigger:** `/plan-review <plan-file-path>`
 
 ### 3. [plan-execute](./plan-execute/)
 Executes a finalized plan by delegating coding to Codex. Claude orchestrates, Codex codes, Claude reviews, Codex fixes — iterating until quality passes.
 
-**Trigger:** `/plan-execute {plan文件路径}`
+**Trigger:** `/plan-execute <plan-file-path>`
 
 ## Installation
 
