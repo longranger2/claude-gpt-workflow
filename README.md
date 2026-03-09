@@ -1,5 +1,7 @@
 # Claude-GPT Workflow Skills
 
+[中文](./README_zh.md) | English
+
 A collection of Claude Code skills for Claude + GPT automatic collaboration workflows.
 
 ## Skills

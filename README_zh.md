@@ -1,5 +1,7 @@
 # Claude-GPT 工作流 Skills
 
+[English](./README.md) | 中文
+
 Claude Code Skills 集合，实现 Claude 与 GPT (Codex) 自动协作工作流。
 
 ## Skills
