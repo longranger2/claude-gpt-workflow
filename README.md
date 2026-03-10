@@ -60,13 +60,63 @@ cp -r codex/ ~/.claude/skills/
 
 ## Workflow
 
+```mermaid
+flowchart TB
+  %% ---------- Styles ----------
+  classDef user fill:#E8F5FF,stroke:#1B6EF3,stroke-width:1px,color:#0B2A5B;
+  classDef claude fill:#FFF7E6,stroke:#F59E0B,stroke-width:1px,color:#5A3A00;
+  classDef codex fill:#F3E8FF,stroke:#7C3AED,stroke-width:1px,color:#2E1065;
+  classDef decision fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827;
+
+  %% ---------- Phase 1: Plan Review ----------
+  subgraph P1["Phase 1: Plan Review (Adversarial Iteration)"]
+    direction TB
+    U1["User: Submit Plan"]:::user
+    C1["Claude: Delegate to Codex for Critical Review"]:::claude
+    X1["Codex: Output Review (10+ issues, Critical/High/Medium/Low)"]:::codex
+    C2["Claude: Evaluate & Refine Plan"]:::claude
+    D1{"Status?"}:::decision
+
+    U1 --> C1 --> X1 --> C2 --> D1
+    D1 -- "NEEDS_REVISION (Loop A)" --> C1
+  end
+
+  %% ---------- Phase 2: Plan Execute ----------
+  subgraph P2["Phase 2: Plan Execute (Orchestrated Implementation)"]
+    direction TB
+    C3["Claude: Dispatch batch to Codex for implementation"]:::claude
+    X2["Codex: Implement code changes (Executor)"]:::codex
+    C4["Claude: Read-only Code Review (Alignment / Quality / Build)"]:::claude
+    C5["Claude: Write Review (issue list)"]:::claude
+    D2{"Verdict?"}:::decision
+    D3{"More steps remaining?"}:::decision
+    Done([Complete]):::decision
+
+    C3 --> X2 --> C4 --> C5 --> D2
+    D2 -- "NEEDS_FIX (Loop B)" --> X2
+    D2 -- "APPROVED" --> D3
+    D3 -- "YES (Loop C: next batch)" --> C3
+    D3 -- "NO" --> Done
+  end
+
+  %% ---------- Phase Transition ----------
+  D1 -- "APPROVED / MOSTLY_GOOD" --> C3
 ```
-User → plan-review → Plan iteration → APPROVED
-                                    ↓
-                            plan-execute → Codex (GPT) → Code Review → Fix iteration
-                                    ↓
-                                Complete
-```
+
+### Core Concepts
+
+| Concept | Description |
+|---------|-------------|
+| **Adversarial** | Codex acts as a "nitpicker", not an assistant — its job is to find flaws |
+| **Iterative** | Not one-shot; multiple rounds of back-and-forth until quality gates pass |
+| **Role Separation** | User defines what, Claude orchestrates how, Codex executes |
+| **Feedback Loops** | Review → Fix → Re-review cycles (Loops A, B, C) |
+
+### The Three Loops
+
+- **Loop A (Plan Refinement)**: Review finds issues → Refine plan → Re-review → ... → APPROVED
+- **Loop B (Code Fixing)**: Code review finds bugs → Codex fixes → Re-review → ... → APPROVED  
+- **Loop C (Batch Processing)**: Complete current batch → Next batch → ... → All done
 
 ## License
 

@@ -60,13 +60,63 @@ cp -r codex/ ~/.claude/skills/
 
 ## 工作流
 
+```mermaid
+flowchart TB
+  %% ---------- 样式 ----------
+  classDef user fill:#E8F5FF,stroke:#1B6EF3,stroke-width:1px,color:#0B2A5B;
+  classDef claude fill:#FFF7E6,stroke:#F59E0B,stroke-width:1px,color:#5A3A00;
+  classDef codex fill:#F3E8FF,stroke:#7C3AED,stroke-width:1px,color:#2E1065;
+  classDef decision fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827;
+
+  %% ---------- Phase 1: 方案评审 ----------
+  subgraph P1["Phase 1: Plan Review（方案对抗式迭代）"]
+    direction TB
+    U1["User: 提交 Plan"]:::user
+    C1["Claude: 将 Plan 交给 Codex 进行批判性 Review"]:::claude
+    X1["Codex: 输出 Review（10+ 个 issue，Critical/High/Medium/Low）"]:::codex
+    C2["Claude: 逐条评估并优化 Plan"]:::claude
+    D1{"Status?"}:::decision
+
+    U1 --> C1 --> X1 --> C2 --> D1
+    D1 -- "NEEDS_REVISION（循环 A）" --> C1
+  end
+
+  %% ---------- Phase 2: 方案执行 ----------
+  subgraph P2["Phase 2: Plan Execute（编排式代码实现）"]
+    direction TB
+    C3["Claude: 按批次拆分，派发本批次给 Codex 实现"]:::claude
+    X2["Codex: 实现代码变更（执行者）"]:::codex
+    C4["Claude: 只读 Code Review（对齐 Plan / 质量 / Build）"]:::claude
+    C5["Claude: 写入 Review（issue 列表）"]:::claude
+    D2{"Verdict?"}:::decision
+    D3{"还有未完成步骤?"}:::decision
+    Done([Complete]):::decision
+
+    C3 --> X2 --> C4 --> C5 --> D2
+    D2 -- "NEEDS_FIX（循环 B）" --> X2
+    D2 -- "APPROVED" --> D3
+    D3 -- "YES（循环 C：下一批次）" --> C3
+    D3 -- "NO" --> Done
+  end
+
+  %% ---------- 阶段转换 ----------
+  D1 -- "APPROVED / MOSTLY_GOOD" --> C3
 ```
-用户 → plan-review → 方案迭代 → APPROVED
-                                  ↓
-                      plan-execute → Codex (GPT) → 代码评审 → 修复迭代
-                                  ↓
-                              完成
-```
+
+### 核心概念
+
+| 概念 | 说明 |
+|------|------|
+| **对抗性 (Adversarial)** | Codex 不是助手而是"挑刺者"——它的工作是找毛病 |
+| **迭代性 (Iterative)** | 不是一次通过，而是多轮往返直到质量门通过 |
+| **角色分离 (Role Separation)** | User 定义做什么，Claude 编排怎么做，Codex 执行 |
+| **反馈闭环 (Feedback Loops)** | Review → Fix → Re-review 的循环（循环 A、B、C）|
+
+### 三个循环
+
+- **循环 A（方案精修）**: Review 发现问题 → 优化方案 → 再 Review → ... → APPROVED
+- **循环 B（代码修复）**: Code Review 发现 bug → Codex 修复 → 再 Review → ... → APPROVED
+- **循环 C（批次处理）**: 完成当前批次 → 下一批次 → ... → 全部完成
 
 ## License
 
