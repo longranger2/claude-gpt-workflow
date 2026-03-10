@@ -61,12 +61,13 @@ cp -r codex/ ~/.claude/skills/
 ## Workflow
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'background': 'transparent', 'primaryColor': '#FFF7E6', 'primaryTextColor': '#5A3A00', 'primaryBorderColor': '#F59E0B', 'lineColor': '#6366F1', 'secondaryColor': '#E8F5FF', 'tertiaryColor': '#F3E8FF'}}}%%
 flowchart TB
   %% ---------- Styles ----------
-  classDef user fill:#E8F5FF,stroke:#1B6EF3,stroke-width:1px,color:#0B2A5B;
-  classDef claude fill:#FFF7E6,stroke:#F59E0B,stroke-width:1px,color:#5A3A00;
-  classDef codex fill:#F3E8FF,stroke:#7C3AED,stroke-width:1px,color:#2E1065;
-  classDef decision fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827;
+  classDef user fill:#E8F5FF,stroke:#1B6EF3,stroke-width:2px,color:#0B2A5B,stroke-dasharray: 0;
+  classDef claude fill:#FFF7E6,stroke:#F59E0B,stroke-width:2px,color:#5A3A00,stroke-dasharray: 0;
+  classDef codex fill:#F3E8FF,stroke:#7C3AED,stroke-width:2px,color:#2E1065,stroke-dasharray: 0;
+  classDef decision fill:#FFFFFF,stroke:#6366F1,stroke-width:2px,color:#111827,stroke-dasharray: 5 5;
 
   %% ---------- Phase 1: Plan Review ----------
   subgraph P1["Phase 1: Plan Review (Adversarial Iteration)"]
