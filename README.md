@@ -26,6 +26,17 @@ Executes a finalized plan by delegating coding to Codex. Claude orchestrates, Co
 
 **Trigger:** `/plan-execute <plan-file-path>`
 
+> **Note**
+>
+> After Claude enters `plan` mode, plan files are stored under `~/.claude` by default. You can change the plan storage directory in `~/.claude/settings.json`; for example, the config below stores plans in the current project's `./plans` directory:
+>
+> ```json
+> {
+>   "env": {},
+>   "plansDirectory": "./plans"
+> }
+> ```
+
 ## Installation
 
 ### Option 1: npx add-skill (Recommended)
