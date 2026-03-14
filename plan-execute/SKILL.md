@@ -1,19 +1,19 @@
 ---
 name: plan-execute
-description: Execute a finalized plan by delegating coding to Codex and reviewing the output. Use when the user says "/plan-execute", "plan execute", "执行方案", "执行计划", "开始实施", "implement plan", "execute plan", "开始coding", "按计划执行". Takes a plan file path as argument. Claude orchestrates, Codex codes, Claude reviews, Codex fixes — iterating until quality passes.
+description: Use when the user says "/plan-execute", "plan execute", "implement plan", or "execute plan" and provides a finalized plan file path to carry out. Claude orchestrates, Codex writes code, Claude reviews, and Codex fixes issues until the quality bar is met.
 ---
 
 # Plan Execute Skill
 
 ## Purpose
 
-当用户输入 `/plan-execute {plan文件路径}` 时，启动"编排式计划执行"流程：
-1. 我（Claude Code）调用 Codex 按照 plan 实现代码
-2. Codex 完成后，我对生成的代码进行 review
-3. 我将 review 写入 reviews/ 目录，再调用 Codex 检查并修复
-4. 循环直到代码质量达标
+When the user runs `/plan-execute {plan-file-path}`, start the "orchestrated plan execution" workflow:
+1. I (Claude Code) ask Codex to implement the code according to the plan.
+2. After Codex finishes, I review the generated code.
+3. I write the review into the `reviews/` directory, then ask Codex to inspect and fix the issues.
+4. Repeat until the code quality bar is met.
 
-**核心原则：我不写代码也不改代码。我只做两件事：审查代码 + 编排 Codex。所有代码变更（实现、修复）都由 Codex 执行。**
+**Core principle: I do not write or edit code myself. I only do two things: review code and orchestrate Codex. All code changes, including implementation and fixes, are performed by Codex.**
 
 ## Usage
 
@@ -21,132 +21,132 @@ description: Execute a finalized plan by delegating coding to Codex and reviewin
 /plan-execute plans/my-feature-plan.md
 ```
 
-## Session 复用
+## Session Reuse
 
-每次调用 Codex 后，从脚本输出中提取 `session_id=xxx`，保存为当前任务的 session ID。在同一任务的后续 Codex 调用中，通过 `--session <id>` 传入以复用上下文，让 Codex 记住之前的实现和修复历史，避免每次都重新读取理解所有文件。
+After each Codex invocation, extract `session_id=xxx` from the script output and save it as the session ID for the current task. In later Codex calls for the same task, pass `--session <id>` to reuse context so Codex remembers prior implementation and fix history instead of rereading the entire codebase every time.
 
 ## My Workflow (Claude Code)
 
-### Step 1: 读取 Plan，拆分执行步骤
+### Step 1: Read the Plan and Split Execution Steps
 
-读取指定的 plan 文件，理解：
-- 方案的整体目标和范围
-- 需要创建/修改的文件列表
-- 实现步骤的先后顺序
-- 相关的项目约定（参考 CLAUDE.md）
+Read the specified plan file and understand:
+- The overall goal and scope of the plan
+- The list of files to create or modify
+- The order of implementation steps
+- Relevant project conventions, especially from `CLAUDE.md`
 
-如果 plan 中已有 checklist（`- [ ]` / `- [x]`），以此为执行单元。
-如果没有明确步骤，我先拆分为合理的执行批次（每批不超过 5 个文件变更）。
+If the plan already contains a checklist (`- [ ]` / `- [x]`), use those items as execution units.
+If it does not define clear steps, split the work into reasonable batches, with no more than 5 file changes per batch.
 
-### Step 2: 调用 Codex 实现代码
+### Step 2: Ask Codex to Implement the Code
 
-使用 `/codex` skill，给 Codex 以下指令：
+Use the `/codex` skill and give Codex the following instruction:
 
 ```
-按照 {plan文件路径} 中的方案实现代码。
+Implement the code according to the plan in {plan-file-path}.
 
-当前执行范围：{具体的步骤/批次描述}
+Current execution scope: {specific step or batch description}
 
-要求：
-- 严格按照 plan 中的设计实现，不要自行发挥
-- 遵循项目 CLAUDE.md 中的 Code Quality Hard Limits
-- 单文件 ≤ 800 行，单函数 ≤ 50 行，嵌套 ≤ 3 层
-- 完成后运行 pnpm build 确认编译通过
-- 如果 plan 中有 checklist，完成的步骤标记为 [x]
+Requirements:
+- Follow the design in the plan exactly. Do not improvise beyond it.
+- Obey the Code Quality Hard Limits defined in `CLAUDE.md`.
+- Single file <= 800 lines, single function <= 50 lines, nesting <= 3 levels
+- Run `pnpm build` after implementation to confirm compilation succeeds
+- If the plan includes a checklist, mark completed steps as `[x]`
 
-实现完成后，列出所有变更的文件及变更摘要。
+After implementation, list all changed files and provide a summary of each change.
 ```
 
-### Step 3: Review Codex 产出的代码（我的核心职责）
+### Step 3: Review Codex Output (My Core Responsibility)
 
-Codex 完成后，我进行代码 review。**注意：我只读代码和写 review，绝不直接修改任何源代码文件。**
+After Codex finishes, I perform a code review. **Important: I only read code and write reviews. I never directly modify source files.**
 
-1. **读取所有变更的文件**，逐一审查
-2. **对照 plan** 检查实现是否符合设计意图
-3. **检查代码质量**：
-   - 是否违反 Code Quality Hard Limits
-   - 是否引入安全隐患
-   - 是否遗漏错误处理
-   - 命名和组织是否清晰
-   - 是否符合项目现有模式
-4. **运行 `pnpm build`** 确认编译状态
+1. **Read every changed file** and review them one by one.
+2. **Compare against the plan** to verify the implementation matches the intended design.
+3. **Check code quality**, including:
+   - Whether it violates the Code Quality Hard Limits
+   - Whether it introduces security risks
+   - Whether error handling is missing
+   - Whether naming and organization are clear
+   - Whether it follows existing project patterns
+4. **Run `pnpm build`** to confirm the compilation status.
 
-### Step 4: 写入 Review 并交给 Codex 修复
+### Step 4: Write the Review and Hand Fixes Back to Codex
 
-将 review 追加到 `reviews/{topic}-review.md`（与 plan-review 共用同一文件）：
+Append the review to `reviews/{topic}-review.md` (shared with `plan-review`):
 
 ```markdown
 ---
 
 ## Code Review Round {N} — {YYYY-MM-DD}
 
-**Scope**: {本次 review 的代码范围}
+**Scope**: {code scope covered in this review}
 **Build Status**: PASS / FAIL
 
 ### Issues
 
-#### Issue 1 ({severity}): {标题}
-**File**: {文件路径:行号}
-{问题描述}
-**Fix**: {具体修复建议}
+#### Issue 1 ({severity}): {title}
+**File**: {file-path:line}
+{issue description}
+**Fix**: {specific fix recommendation}
 
 ...
 
 ### Verdict: NEEDS_FIX / APPROVED
 ```
 
-如果 `Verdict: NEEDS_FIX`，调用 `/codex` 让 Codex 去修复（我不自己改）：
+If `Verdict: NEEDS_FIX`, call `/codex` and have Codex fix the issues instead of editing them myself:
 
 ```
-读取 {review文件路径} 中最新一轮的 Code Review，
-逐条检查 issues，确认是问题的进行修复，不是问题的说明理由。
-修复完成后运行 pnpm build 确认编译通过。
-列出修复的 issues 和对应的变更。
+Read the latest Code Review round in {review-file-path}.
+Check each issue one by one. Fix the valid issues, and explain why any disputed item is not actually a problem.
+After making fixes, run `pnpm build` to confirm compilation succeeds.
+List the issues that were fixed and the corresponding code changes.
 ```
 
-如果 `Verdict: APPROVED`，跳到 Step 6。
+If `Verdict: APPROVED`, skip to Step 6.
 
-### Step 5: 验证修复并迭代
+### Step 5: Verify Fixes and Iterate
 
-Codex 修复后，我再次 review（仍然只读不改）：
-- 检查每个 issue 是否真正修复
-- 检查修复是否引入新问题
-- 如仍有问题，写新一轮 review → 再交给 Codex 修复（重复 Step 4）
-- 如全部通过，标记 `Verdict: APPROVED`
+After Codex applies fixes, I review again, still without editing code directly:
+- Check whether each issue was truly fixed
+- Check whether the fixes introduced new problems
+- If issues remain, write a new review round and hand it back to Codex for another fix pass (repeat Step 4)
+- If everything passes, mark the review as `Verdict: APPROVED`
 
-### Step 6: 更新 Plan 进度
+### Step 6: Update Plan Progress
 
-每完成一个批次，调用 Codex 更新 plan 文件中的 checklist（`- [ ]` → `- [x]`）。
-如果还有未完成的步骤，回到 Step 2 执行下一批次。
-全部完成后进入收尾。
+After each batch is completed, ask Codex to update the checklist in the plan file (`- [ ]` -> `- [x]`).
+If unfinished steps remain, go back to Step 2 for the next batch.
+Once all work is complete, move to the wrap-up.
 
-### Step 7: 收尾
+### Step 7: Wrap Up
 
-向用户汇报：
-- 完成了哪些步骤
-- 经历了几轮 code review
-- 主要修复了哪些问题
-- 最终编译状态
-- 变更的文件列表
-- review 记录文件路径
+Report the following to the user:
+- Which steps were completed
+- How many code review rounds were needed
+- Which major issues were fixed
+- Final build status
+- List of changed files
+- Path to the review log file
 
 ## Review Severity Levels
 
-| Level | 含义 | 是否必须修复 |
-|-------|------|-------------|
-| Critical | 会导致运行时错误或安全漏洞 | 必须 |
-| High | 违反项目约定或明显的设计缺陷 | 必须 |
-| Medium | 代码质量问题，可改进 | 建议修复 |
-| Low | 风格或偏好问题 | 可选 |
-| Suggestion | 优化建议 | 可选 |
+| Level | Meaning | Must Fix |
+|-------|---------|----------|
+| Critical | Causes runtime failures or security vulnerabilities | Yes |
+| High | Violates project conventions or has obvious design flaws | Yes |
+| Medium | Code quality issue that should be improved | Recommended |
+| Low | Style or preference issue | Optional |
+| Suggestion | Optimization suggestion | Optional |
 
-**Verdict 判定规则**：
-- 存在 Critical 或 High → `NEEDS_FIX`
-- 仅 Medium 及以下 → `APPROVED`（附带改进建议）
+**Verdict rules:**
+- If any Critical or High issue exists -> `NEEDS_FIX`
+- If all issues are Medium or below -> `APPROVED` with optional improvement notes
 
 ## File Convention
 
-- Review 文件与 plan-review 共用：`reviews/{topic}-review.md`
-- `{topic}` 取 plan 文件名（去掉 `.md`）
-- Plan review 轮次和 code review 轮次都追加在同一文件中
-- 通过标题区分：`## Round {N}` (plan review) vs `## Code Review Round {N}` (code review)
+- Share the same review file as `plan-review`: `reviews/{topic}-review.md`
+- `{topic}` is the plan file name without `.md`
+- Both plan review rounds and code review rounds are appended to the same file
+- Distinguish them by heading: `## Round {N}` for plan review and `## Code Review Round {N}` for code review
