@@ -39,28 +39,13 @@ Executes a finalized plan by delegating coding to Codex. Claude orchestrates, Co
 
 ## Installation
 
-### Option 1: npx add-skill (Recommended)
+### Option 1: npx skills add (Recommended)
 
-**Prerequisite:** Install the add-skill CLI first:
 ```bash
-npm install -g add-skill
+npx skills add longranger2/claude-gpt-workflow
 ```
 
-Then install the skills:
-```bash
-npx add-skill longranger2/claude-gpt-workflow
-```
-
-### Option 2: Per-skill installation
-
-Install individual skills separately:
-```bash
-npx add-skill longranger2/claude-gpt-workflow/plan-review
-npx add-skill longranger2/claude-gpt-workflow/plan-execute
-npx add-skill longranger2/claude-gpt-workflow/codex
-```
-
-### Option 3: Manual installation
+### Option 2: Manual installation
 
 Copy skills to your Claude Code skills directory:
 ```bash
